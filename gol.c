@@ -5,7 +5,7 @@
 #include <string.h>
 
 void copy_grid(int gRows,int gCols,int nextGrid[][gCols],int currentGrid[][gCols]);
-void print(int rows,int cols,int gRows,int gCols,int currentGrid[][gCols]);
+void print(int *rows,int *cols,int gRows,int gCols,int currentGrid[][gCols]);
 void new_grid(int gRows,int gCols,int nextGrid[][gCols]);
 
 int main(){
@@ -20,7 +20,14 @@ int main(){
     //start color
     if(has_colors()){start_color();}
 
+    //initialize color pairs
+    init_pair(1,COLOR_GREEN,COLOR_BLACK);
+    init_pair(2,COLOR_MAGENTA,COLOR_BLACK);
+    init_pair(3,COLOR_CYAN,COLOR_BLACK);
+    init_pair(4,COLOR_WHITE,COLOR_CYAN);
+
     int rows,cols;
+    
 
     getmaxyx(stdscr,rows,cols);
     const int gRows = (rows/4) * 3; // create a 3/4 screen size grid
@@ -53,13 +60,13 @@ int main(){
 
         getmaxyx(stdscr,rows,cols); // keep game centered if screen is resized
         // print quit message at bottom center
-        attrset(A_BOLD);
-        mvprintw(rows - 1,(cols - strlen(quitMessage)) / 2,"%s",quitMessage);
-        mvprintw(0,(cols - strlen(resetMessage)) / 2,"%s",resetMessage);
+        attrset(A_BOLD | COLOR_PAIR(1));
+        mvaddstr(rows - 1,(cols - strlen(quitMessage)) / 2,quitMessage);
+        mvaddstr(0,(cols - strlen(resetMessage)) / 2,resetMessage);
         attrset(A_NORMAL);
 
         //print board
-        print(rows,cols,gRows,gCols,currentGrid);
+        print(&rows,&cols,gRows,gCols,currentGrid);
 
         //calculate new grid
         for(int n = 0; n < gRows; n++){
@@ -147,14 +154,14 @@ void copy_grid(int gRows,int gCols,int nextGrid[][gCols],int currentGrid[][gCols
     }
 }
 
-void print(int rows,int cols,int gRows,int gCols,int currentGrid[][gCols]){
-        int topLeft_y = (rows - gRows) / 2;
+void print(int *rows,int *cols,int gRows,int gCols,int currentGrid[][gCols]){
+        int topLeft_y = (*rows - gRows) / 2;
         int topLeft_x;
 
         for(int n = 0; n < gRows; n++){
 
             topLeft_y++; // go down a row for printing
-            topLeft_x = (cols - gCols) / 2; // column position to start printing
+            topLeft_x = (*cols - gCols) / 2; // column position to start printing
 
             for(int m = 0; m < gCols; m++){
 
@@ -166,12 +173,17 @@ void print(int rows,int cols,int gRows,int gCols,int currentGrid[][gCols]){
 
                 else if(currentGrid[n][m] == 2){
 
-                    mvaddch(topLeft_y,topLeft_x,A_BOLD | ACS_DIAMOND);
+                    mvaddch(topLeft_y,topLeft_x,A_BOLD | ACS_DIAMOND | COLOR_PAIR(2));
                 }
 
-                else if(currentGrid[n][m] >= 3){
+                else if(currentGrid[n][m] >= 3 && currentGrid[n][m] <= 10){
 
-                    mvaddch(topLeft_y,topLeft_x,A_BOLD | ACS_PLUS);
+                    mvaddch(topLeft_y,topLeft_x,A_BOLD | ACS_PLUS | COLOR_PAIR(3));
+                }
+
+                else if(currentGrid[n][m] > 10){
+
+                    mvaddch(topLeft_y,topLeft_x,A_BOLD | ACS_PLUS | COLOR_PAIR(4));
                 }
 
                 else{
