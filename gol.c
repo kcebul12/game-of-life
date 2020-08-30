@@ -4,6 +4,8 @@
 #include <ncurses.h>
 #include <string.h>
 
+void copy_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]);
+void new_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]);
 
 int main(){
     
@@ -11,61 +13,60 @@ int main(){
     initscr();
     noecho();
     keypad(stdscr,1);
-    nodelay(stdscr,1);
+    nodelay(stdscr,1); // allow for loop interruption
+    curs_set(0); // hide cursor
 
     int rows,cols;
+
     getmaxyx(stdscr,rows,cols);
-    int gRows = (rows/3) * 2; // create a 2/3 screen size grid
-    int gCols = (cols/3) * 2;
+    const int gRows = (rows/4) * 3; // create a 2/3 screen size grid
+    const int gCols = (cols/4) * 3;
+
     char currentGrid[gRows][gCols];
     char nextGrid[gRows][gCols];
 
     srand(time(NULL)); // set seed
 
-    //initialize board
-    for(int n = 0; n < gRows; n++){
-        for(int m = 0; m < gCols; m++){
-            
-            if((rand() % 2) == 0){
-                nextGrid[n][m] = '#';
-            } 
-            
-            else
-                nextGrid[n][m] = ' ';
-        }
-    } 
-
-    //copy grid into nextGrid for modifying in loop
-    for(int n = 0; n < gRows; n++){
-        for(int m = 0; m < gCols; m++){
-
-            currentGrid[n][m] = nextGrid[n][m];
-        }
-    }
-
+    new_grid(gRows,gCols,nextGrid,currentGrid);
+    copy_grid(gRows,gCols,nextGrid,currentGrid);
 
     char quitMessage[] = "Press F1 to Quit";
+    char resetMessage[] = "Press Enter to reset game";
     int ch;
     //start game loop
     while((ch = getch()) != KEY_F(1)){
-        // print quit message at bottom center
-        mvprintw(rows,(cols - strlen(quitMessage)) / 2,"%s",quitMessage);
 
         //clear current screen
         clear();
+
+        // if Enter is hit, reset board
+        if(ch == '\n'){
+
+            new_grid(gRows,gCols,nextGrid,currentGrid);
+            copy_grid(gRows,gCols,nextGrid,currentGrid);
+
+        }
+
+        getmaxyx(stdscr,rows,cols); // keep game centered if screen is resized
+        // print quit message at bottom center
+        mvprintw(rows - 1,(cols - strlen(quitMessage)) / 2,"%s",quitMessage);
+        mvprintw(0,(cols - strlen(resetMessage)) / 2,"%s",resetMessage);
+
         //print board
         int topLeft_y = (rows - gRows) / 2;
-        int topLeft_x = (cols - gCols) / 2;
+        int topLeft_x;
 
         for(int n = 0; n < gRows; n++){
 
+            topLeft_y++; // go down a row for printing
+            topLeft_x = (cols - gCols) / 2; // column position to start printing
+
             for(int m = 0; m < gCols; m++){
-                putchar(currentGrid[n][m]);
+                mvprintw(topLeft_y,topLeft_x,"%c",currentGrid[n][m]);
+                topLeft_x++; //move column over by one
             }
 
-            putchar('\n');
         }
-
 
         //calculate new grid
         for(int n = 0; n < gRows; n++){
@@ -125,17 +126,35 @@ int main(){
         }
         
         //copy grid into nextGrid for modifying in loop
-        for(int n = 0; n < gRows; n++){
-            for(int m = 0; m < gCols; m++){
-
-                currentGrid[n][m] = nextGrid[n][m];
-            }
-        }
-        sleep(1);        
-        
+        copy_grid(gRows,gCols,nextGrid,currentGrid);
+        refresh();
+        napms(100);
     }
 
     endwin();
 
     return 0;
+}
+
+void new_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]){
+    for(int n = 0; n < gRows; n++){
+        for(int m = 0; m < gCols; m++){
+            
+            if((rand() % 2) == 0){
+                nextGrid[n][m] = '#';
+            } 
+            
+            else
+                nextGrid[n][m] = ' ';
+        }
+    } 
+}
+
+void copy_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]){
+    for(int n = 0; n < gRows; n++){
+        for(int m = 0; m < gCols; m++){
+
+            currentGrid[n][m] = nextGrid[n][m];
+        }
+    }
 }
