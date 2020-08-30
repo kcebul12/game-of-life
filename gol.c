@@ -1,22 +1,30 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
-
-#define ROWS 70
-#define COLS 55
+#include <ncurses.h>
+#include <string.h>
 
 
 int main(){
     
-    char currentGrid[ROWS][COLS];
-    char nextGrid[ROWS][COLS];
+    // basic curses setup
+    initscr();
+    noecho();
+    keypad(stdscr,1);
+    nodelay(stdscr,1);
 
-    srand(time(NULL));
+    int rows,cols;
+    getmaxyx(stdscr,rows,cols);
+    int gRows = (rows/3) * 2; // create a 2/3 screen size grid
+    int gCols = (cols/3) * 2;
+    char currentGrid[gRows][gCols];
+    char nextGrid[gRows][gCols];
+
+    srand(time(NULL)); // set seed
 
     //initialize board
-    for(int n = 0; n < ROWS; n++){
-        for(int m = 0; m < COLS; m++){
+    for(int n = 0; n < gRows; n++){
+        for(int m = 0; m < gCols; m++){
             
             if((rand() % 2) == 0){
                 nextGrid[n][m] = '#';
@@ -28,24 +36,30 @@ int main(){
     } 
 
     //copy grid into nextGrid for modifying in loop
-    for(int n = 0; n < ROWS; n++){
-        for(int m = 0; m < COLS; m++){
+    for(int n = 0; n < gRows; n++){
+        for(int m = 0; m < gCols; m++){
 
             currentGrid[n][m] = nextGrid[n][m];
         }
     }
 
 
+    char quitMessage[] = "Press F1 to Quit";
+    int ch;
     //start game loop
-    while(1){
-        //separate generations
-        for(int i = 0; i < 5; i++){
-            putchar('\n');
-        }
+    while((ch = getch()) != KEY_F(1)){
+        // print quit message at bottom center
+        mvprintw(rows,(cols - strlen(quitMessage)) / 2,"%s",quitMessage);
 
+        //clear current screen
+        clear();
         //print board
-        for(int n = 0; n < ROWS; n++){
-            for(int m = 0; m < COLS; m++){
+        int topLeft_y = (rows - gRows) / 2;
+        int topLeft_x = (cols - gCols) / 2;
+
+        for(int n = 0; n < gRows; n++){
+
+            for(int m = 0; m < gCols; m++){
                 putchar(currentGrid[n][m]);
             }
 
@@ -54,15 +68,15 @@ int main(){
 
 
         //calculate new grid
-        for(int n = 0; n < ROWS; n++){
-            for(int m = 0; m < COLS; m++){
+        for(int n = 0; n < gRows; n++){
+            for(int m = 0; m < gCols; m++){
 
                 int numNeighbors = 0;
 
-                int north = (n - 1) % ROWS;
-                int south = (n + 1) % ROWS;
-                int west = (m - 1) % COLS;
-                int east = (m + 1) % COLS;
+                int north = (n - 1) % gRows;
+                int south = (n + 1) % gRows;
+                int west = (m - 1) % gCols;
+                int east = (m + 1) % gCols;
                 
                 //check north
                 if(currentGrid[north][m] == '#')
@@ -111,8 +125,8 @@ int main(){
         }
         
         //copy grid into nextGrid for modifying in loop
-        for(int n = 0; n < ROWS; n++){
-            for(int m = 0; m < COLS; m++){
+        for(int n = 0; n < gRows; n++){
+            for(int m = 0; m < gCols; m++){
 
                 currentGrid[n][m] = nextGrid[n][m];
             }
@@ -120,6 +134,8 @@ int main(){
         sleep(1);        
         
     }
+
+    endwin();
 
     return 0;
 }
