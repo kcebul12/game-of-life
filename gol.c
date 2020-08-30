@@ -4,8 +4,9 @@
 #include <ncurses.h>
 #include <string.h>
 
-void copy_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]);
-void new_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]);
+void copy_grid(int gRows,int gCols,int nextGrid[][gCols],int currentGrid[][gCols]);
+void print(int rows,int cols,int gRows,int gCols,int currentGrid[][gCols]);
+void new_grid(int gRows,int gCols,int nextGrid[][gCols]);
 
 int main(){
     
@@ -16,18 +17,21 @@ int main(){
     nodelay(stdscr,1); // allow for loop interruption
     curs_set(0); // hide cursor
 
+    //start color
+    if(has_colors()){start_color();}
+
     int rows,cols;
 
     getmaxyx(stdscr,rows,cols);
-    const int gRows = (rows/4) * 3; // create a 2/3 screen size grid
+    const int gRows = (rows/4) * 3; // create a 3/4 screen size grid
     const int gCols = (cols/4) * 3;
 
-    char currentGrid[gRows][gCols];
-    char nextGrid[gRows][gCols];
+    int currentGrid[gRows][gCols];
+    int nextGrid[gRows][gCols];
 
     srand(time(NULL)); // set seed
 
-    new_grid(gRows,gCols,nextGrid,currentGrid);
+    new_grid(gRows,gCols,nextGrid);
     copy_grid(gRows,gCols,nextGrid,currentGrid);
 
     char quitMessage[] = "Press F1 to Quit";
@@ -42,31 +46,20 @@ int main(){
         // if Enter is hit, reset board
         if(ch == '\n'){
 
-            new_grid(gRows,gCols,nextGrid,currentGrid);
+            new_grid(gRows,gCols,nextGrid);
             copy_grid(gRows,gCols,nextGrid,currentGrid);
 
         }
 
         getmaxyx(stdscr,rows,cols); // keep game centered if screen is resized
         // print quit message at bottom center
+        attrset(A_BOLD);
         mvprintw(rows - 1,(cols - strlen(quitMessage)) / 2,"%s",quitMessage);
         mvprintw(0,(cols - strlen(resetMessage)) / 2,"%s",resetMessage);
+        attrset(A_NORMAL);
 
         //print board
-        int topLeft_y = (rows - gRows) / 2;
-        int topLeft_x;
-
-        for(int n = 0; n < gRows; n++){
-
-            topLeft_y++; // go down a row for printing
-            topLeft_x = (cols - gCols) / 2; // column position to start printing
-
-            for(int m = 0; m < gCols; m++){
-                mvprintw(topLeft_y,topLeft_x,"%c",currentGrid[n][m]);
-                topLeft_x++; //move column over by one
-            }
-
-        }
+        print(rows,cols,gRows,gCols,currentGrid);
 
         //calculate new grid
         for(int n = 0; n < gRows; n++){
@@ -80,46 +73,46 @@ int main(){
                 int east = (m + 1) % gCols;
                 
                 //check north
-                if(currentGrid[north][m] == '#')
+                if(currentGrid[north][m])
                     numNeighbors += 1;
 
                 //check south
-                if(currentGrid[south][m] == '#')
+                if(currentGrid[south][m])
                     numNeighbors += 1;
 
                 //check east
-                if(currentGrid[n][east] == '#')
+                if(currentGrid[n][east])
                     numNeighbors += 1;
                
                 //check west
-                if(currentGrid[n][west] == '#')
+                if(currentGrid[n][west])
                     numNeighbors += 1;
                 
                 //check north-west
-                if(currentGrid[north][west] == '#')
+                if(currentGrid[north][west])
                     numNeighbors += 1;
 
                 //check north-east
-                if(currentGrid[north][east] == '#')
+                if(currentGrid[north][east])
                     numNeighbors += 1;
 
                 //check south-east
-                if(currentGrid[south][east] == '#')
+                if(currentGrid[south][east])
                     numNeighbors += 1;
 
                 //check south-west
-                if(currentGrid[south][west] == '#')
+                if(currentGrid[south][west])
                     numNeighbors += 1;
 
                 //does the cell live or die
-                if(currentGrid[n][m] == ' ' && numNeighbors == 3)
-                    nextGrid[n][m] = '#'; //cell is born
+                if(currentGrid[n][m] == 0 && numNeighbors == 3)
+                    nextGrid[n][m]++; //cell is born
 
-                else if(currentGrid[n][m] == '#' && (numNeighbors == 2 || numNeighbors == 3))
-                    nextGrid[n][m] = '#'; //cell survives
+                else if(currentGrid[n][m] >= 1 && (numNeighbors == 2 || numNeighbors == 3))
+                    nextGrid[n][m]++; //cell survives
 
                 else
-                    nextGrid[n][m] = ' '; //cell dies
+                    nextGrid[n][m] = 0; //cell dies
 
                 
             }
@@ -136,21 +129,16 @@ int main(){
     return 0;
 }
 
-void new_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]){
+void new_grid(int gRows,int gCols,int nextGrid[][gCols]){
     for(int n = 0; n < gRows; n++){
         for(int m = 0; m < gCols; m++){
             
-            if((rand() % 2) == 0){
-                nextGrid[n][m] = '#';
-            } 
-            
-            else
-                nextGrid[n][m] = ' ';
+            nextGrid[n][m] = rand() % 2; // fill grid with 0's and 1's.  O is dead; 1 is alive
         }
     } 
 }
 
-void copy_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCols]){
+void copy_grid(int gRows,int gCols,int nextGrid[][gCols],int currentGrid[][gCols]){
     for(int n = 0; n < gRows; n++){
         for(int m = 0; m < gCols; m++){
 
@@ -158,3 +146,43 @@ void copy_grid(int gRows,int gCols,char nextGrid[][gCols],char currentGrid[][gCo
         }
     }
 }
+
+void print(int rows,int cols,int gRows,int gCols,int currentGrid[][gCols]){
+        int topLeft_y = (rows - gRows) / 2;
+        int topLeft_x;
+
+        for(int n = 0; n < gRows; n++){
+
+            topLeft_y++; // go down a row for printing
+            topLeft_x = (cols - gCols) / 2; // column position to start printing
+
+            for(int m = 0; m < gCols; m++){
+
+                if(currentGrid[n][m] == 1){
+
+                    mvaddch(topLeft_y,topLeft_x,ACS_BULLET);
+
+                }
+
+                else if(currentGrid[n][m] == 2){
+
+                    mvaddch(topLeft_y,topLeft_x,A_BOLD | ACS_DIAMOND);
+                }
+
+                else if(currentGrid[n][m] >= 3){
+
+                    mvaddch(topLeft_y,topLeft_x,A_BOLD | ACS_PLUS);
+                }
+
+                else{
+
+                    mvaddch(topLeft_y,topLeft_x,' ');
+
+                }
+
+                topLeft_x++; //move column over by one
+            }
+
+        }
+}
+
